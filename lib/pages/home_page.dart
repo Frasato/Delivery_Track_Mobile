@@ -74,7 +74,6 @@ class _HomePageState extends State<HomePage>{
       ),
     ).listen((Position position) {
       if(_sendingLocation){
-        print('${position.latitude} - ${position.longitude}');
         _websocketService.sendLocation(position.latitude, position.longitude);
       }
     });
