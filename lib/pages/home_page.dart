@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:delivery_track_app/services/api_service.dart';
 import 'package:delivery_track_app/services/websocket_service.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +41,6 @@ class _HomePageState extends State<HomePage>{
       });
 
       _websocketService.connect(id);
-      _startLocationUpdates();
     }
   }
 
@@ -60,25 +61,67 @@ class _HomePageState extends State<HomePage>{
     }
   }
 
-  void _startLocationUpdates() async{
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if(!serviceEnabled) return;
-
-    LocationPermission permission = await Geolocator.requestPermission();
-    if(permission == LocationPermission.denied) return;
-
-    Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 0, //Se for 10, a cada 10 metros ele vai chamar o getPosition, para testes parados, deixe 0
-      ),
-    ).listen((Position position) {
-      if(_sendingLocation){
-        _websocketService.sendLocation(position.latitude, position.longitude);
-      }
-    });
+  @override
+  initState(){
+    super.initState();
+    startListeningLocation();
   }
+
+  Position? currentLocation;
+  StreamSubscription? subscription;
   
+  locationPermission({VoidCallback? isSuccess}) async{
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if(!serviceEnabled){
+      await Geolocator.openLocationSettings();
+    }
+
+    permission = await Geolocator.checkPermission();
+    if(permission == LocationPermission.denied){
+      permission = await Geolocator.requestPermission();
+      if(permission == LocationPermission.denied){
+        await Geolocator.openAppSettings();
+      }
+    }
+
+    if(permission == LocationPermission.deniedForever){
+      await Geolocator.openAppSettings();
+      return Future.error('Location permissions are permanetly denied, we cannot request permissions.');
+    }
+    {
+      isSuccess?.call();
+    }
+  }
+
+  void startListeningLocation(){
+    locationPermission(
+      isSuccess: () async{
+        subscription = Geolocator.getPositionStream(
+          locationSettings: Platform.isAndroid 
+            ? AndroidSettings(
+              foregroundNotificationConfig: const ForegroundNotificationConfig(
+                notificationTitle: 'Location fetching in background',
+                notificationText: 'Your current location is listened in background',
+                enableWakeLock: true,
+              ),
+            )
+            : AppleSettings(
+              accuracy: LocationAccuracy.high,
+              activityType: ActivityType.fitness,
+              pauseLocationUpdatesAutomatically: true,
+              showBackgroundLocationIndicator: false,
+            )
+        ).listen((event) async{
+          currentLocation = event;
+          _websocketService.sendLocation(currentLocation?.latitude, currentLocation?.longitude);
+        });
+      }
+    );
+  }
+
   @override
   Widget build(BuildContext context){
     return Scaffold(
@@ -121,5 +164,10 @@ class _HomePageState extends State<HomePage>{
         ),
       ),
     );
+    }
+    @override
+    void dispose(){
+      subscription?.cancel();
+      super.dispose();
   }
 }
