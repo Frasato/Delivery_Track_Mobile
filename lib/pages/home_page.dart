@@ -57,6 +57,7 @@ class _HomePageState extends State<HomePage>{
       setState(() {
         _sendingLocation = false;
         _deliveryId = null;
+        _trackingUrl = null;
       });
     }
   }
