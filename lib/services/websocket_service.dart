@@ -17,7 +17,7 @@ class WebsocketService {
   
     _stompClient = StompClient(
       config: StompConfig(
-        url: 'ws://192.168.1.102:8080/ws',
+        url: 'ws://localhost:8080/ws',
         onConnect: _onConnect,
         beforeConnect: () async {
           await Future.delayed(const Duration(microseconds: 200));
@@ -40,7 +40,7 @@ class WebsocketService {
     );
   }
 
-  void sendLocation(double lat, double lng){
+  void sendLocation(double? lat, double? lng){
     if(!isConnected) return;
 
     final body = jsonEncode({
