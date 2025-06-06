@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:delivery_track_app/services/api_service.dart';
+import 'package:delivery_track_app/services/api_uri.dart';
 import 'package:delivery_track_app/services/websocket_service.dart';
+import 'package:delivery_track_app/styles/blue_button.dart';
+import 'package:delivery_track_app/styles/text_button_blue_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -20,6 +23,47 @@ class _HomePageState extends State<HomePage>{
   String? _deliveryId;
   bool _sendingLocation = false;
   String? _trackingUrl;
+  final _valueController = TextEditingController();
+
+  void _showStartDeliveryDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Iniciar Corrida'),
+      content: TextField(
+        controller: _valueController,
+        decoration: const InputDecoration(
+          labelText: 'Quantos pedidos...',
+          border: OutlineInputBorder(),
+        ),
+        keyboardType: TextInputType.number,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          style: textButtonBlueStyle,
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          style: blueButtonStyle,
+          onPressed: () {
+            final value = _valueController.text;
+            if (value.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Informe o valor da corrida.')),
+              );
+              return;
+            }
+
+            Navigator.pop(context);
+            _startDelivery();
+          },
+          child: const Text('Iniciar'),
+        ),
+      ],
+    ),
+  );
+}
 
   void _startDelivery() async{
     final token = await ApiService.getToken();
@@ -28,11 +72,11 @@ class _HomePageState extends State<HomePage>{
 
     if(token == null || userId == null) return;
 
-    final link = await ApiService.startDelivery(token, userId);
+    final link = await ApiService.startDelivery(token, userId, int.parse(_valueController.text));
     if(link != null){
       final id = Uri.parse(link).pathSegments.last;
 
-      final url = 'http://localhost:5173/track/$id';
+      final url = '$mapUrl/track/$id';
 
       setState(() {
         _deliveryId = id;
@@ -56,8 +100,8 @@ class _HomePageState extends State<HomePage>{
       _websocketService.disconnect();
       setState(() {
         _sendingLocation = false;
-        _deliveryId = null;
-        _trackingUrl = null;
+        _deliveryId = '';
+        _trackingUrl = '';
       });
     }
   }
@@ -126,44 +170,50 @@ class _HomePageState extends State<HomePage>{
   @override
   Widget build(BuildContext context){
     return Scaffold(
-      appBar: AppBar(title: const Text('Home'),),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            ElevatedButton(
-              onPressed: _startDelivery,
-              child: const Text('Iniciar Corrida')
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _endDelivery,
-              child: const Text('Encerrar Corrida')
-            ),
-            const SizedBox(height: 24),
-            Text(
-              _sendingLocation ? 'Enviando localização...' : 'Parado.'
-            ),
-            if(_trackingUrl != null) ...[
-              SelectableText(
-                'Link de rastreamento: \n$_trackingUrl',
-                style: const TextStyle(fontSize: 16),
+      body: Align(
+        alignment: Alignment.center,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: _showStartDeliveryDialog,
+                style: blueButtonStyle,
+                child: const Text('Iniciar Corrida')
               ),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: _trackingUrl!));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Link copiado!'))
-                  );
-                },
-                icon: const Icon(Icons.copy),
-                label: const Text('Copiar Link'),
-              )
-            ]
-          ],
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _endDelivery,
+                style: blueButtonStyle,
+                child: const Text('Encerrar Corrida')
+              ),
+              const SizedBox(height: 24),
+              Text(
+                _sendingLocation ? 'Enviando localização...' : 'Parado.'
+              ),
+              if(_trackingUrl != null && _sendingLocation) ...[
+                SelectableText(
+                  'Link de rastreamento gerado, clique para copiar e envie para o cliente!',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: _trackingUrl!));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Link copiado!'))
+                    );
+                  },
+                  style: blueButtonStyle,
+                  icon: const Icon(Icons.copy),
+                  label: const Text('Copiar Link'),
+                )
+              ]
+            ],
+          ),
         ),
-      ),
+      )
     );
     }
     @override
