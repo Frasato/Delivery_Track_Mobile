@@ -1,4 +1,7 @@
 import 'package:delivery_track_app/services/api_service.dart';
+import 'package:delivery_track_app/styles/button.dart';
+import 'package:delivery_track_app/styles/text_button_style.dart';
+import 'package:delivery_track_app/widgets/custom_text_form.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget{
@@ -46,37 +49,56 @@ class _LoginPageState extends State<LoginPage>{
 
    @override
    Widget build(BuildContext context){
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Login"),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color.fromARGB(100, 7, 93, 232), Color.fromARGB(100, 40, 161, 209)],
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'E-mail'),
-                validator: (value) => value == null || value.isEmpty ? 'Informe seu email' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Senha'),
-                obscureText: true,
-                validator: (value) => value == null || value.isEmpty ? 'Informe sua senha' : null,
-              ),
-              const SizedBox(height: 38),
-              _isLoading ? const CircularProgressIndicator() : ElevatedButton(onPressed: _login, child: Text('Entrar')),
-              SizedBox(height: 16),
-              TextButton(
-                onPressed: _toRegister,
-                child: const Text('Não tem conta? Click aqui.'),
-              ),
-            ],
-          )
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Align(
+          alignment: Alignment.center,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomTextForm(
+                    controller: _emailController,
+                    labelText: 'E-mail', 
+                    validator: (value) => value == null || value.isEmpty ? 'Informe seu email' : null,
+                    icon: Icons.email,
+                  ),
+                  const SizedBox(height: 16),
+                  CustomTextForm(
+                    controller: _passwordController,
+                    labelText: 'Senha',
+                    validator: (value) => value == null || value.isEmpty ? 'Informe a senha' : null,
+                    icon: Icons.lock,
+                  ),
+                  const SizedBox(height: 38),
+                  _isLoading ? const CircularProgressIndicator() 
+                    : 
+                    ElevatedButton(
+                      onPressed: _login,
+                      style: buttonStyle,
+                      child: Text('Entrar')
+                    ),
+                  SizedBox(height: 25),
+                  TextButton(
+                    onPressed: _toRegister,
+                    style: textButtonStyle,
+                    child: const Text('Não tem conta? Click aqui.'),
+                  ),
+                ],
+              )
+            ),
+          ),
         ),
       ),
     );
