@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:delivery_track_app/services/api_uri.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
@@ -17,7 +18,7 @@ class WebsocketService {
   
     _stompClient = StompClient(
       config: StompConfig(
-        url: 'ws://localhost:8080/ws',
+        url: webscoketUrl,
         onConnect: _onConnect,
         beforeConnect: () async {
           await Future.delayed(const Duration(microseconds: 200));
