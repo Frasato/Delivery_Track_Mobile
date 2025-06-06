@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:delivery_track_app/services/api_uri.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-
-  static const String baseUrl = 'http://192.168.1.102:8080/api/delivery/track';
-
   static Future<bool> register(String name, String email, String password) async {
     log('Register running...');
 
@@ -81,13 +79,21 @@ class ApiService {
     return prefs.getString('token');
   }
 
-  static Future<String?> startDelivery(String token, String userId) async {
+  static Future<String?> startDelivery(String token, String userId, int orders) async {
+    if(orders == 0){
+      return null;
+    }
+    
     final response = await http.post(
-      Uri.parse('$baseUrl/init/$userId'),
+      Uri.parse('$baseUrl/init'),
       headers: {
         'Content-Type':'application/json',
         'Authorization':'Bearer $token',
       },
+      body: jsonEncode({
+        'userId': userId,
+        'orders': orders
+      }),
     );
 
     if(response.statusCode == 201){
